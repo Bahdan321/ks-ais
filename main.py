@@ -3,6 +3,8 @@ import flet as ft
 # Импортируем представления страниц
 from pages.login_page import login_view
 from pages.registration_page import registration_view
+from pages.user_page import user_view
+from pages.admin_page import admin_view
 
 
 def main(page: ft.Page):
@@ -12,8 +14,10 @@ def main(page: ft.Page):
 
     # Словарь для хранения представлений по маршрутам
     views = {
-        "/login": login_view(page),  # Передаем объект page
-        "/registration": registration_view(page),  # Передаем объект page
+        "/login": login_view(page),
+        "/registration": registration_view(page),
+        "/user": user_view(page),
+        "/admin": admin_view(page),
     }
 
     def route_change(route):

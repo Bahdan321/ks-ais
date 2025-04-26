@@ -9,6 +9,8 @@ from styles.colors import (
     YELLOW_DARK,
     PINK_DARK,  # Добавляем PINK_DARK для заголовка
 )
+from db import db_manager
+from models.models import UserRoleEnum
 
 
 def login_view(page: ft.Page):
@@ -45,18 +47,6 @@ def login_view(page: ft.Page):
         color=YELLOW_LIGHT,
     )
 
-    # Обработчик нажатия кнопки входа (пока пустой)
-    def login_click(e):
-        print("Попытка входа:")
-        print(f"  Почта: {email_field.value}")
-        print(f"  Пароль: {password_field.value}")
-        # Здесь будет логика проверки данных
-        page.snack_bar = ft.SnackBar(ft.Text("Данные для входа (в консоли)"), open=True)
-        page.update()
-
-    # Импортируем db_manager
-    from db import db_manager
-
     # Обработчик нажатия кнопки входа
     def login_click(e):
         if not email_field.value or not password_field.value:
@@ -66,7 +56,7 @@ def login_view(page: ft.Page):
             page.update()
             return
 
-        user = db_manager.verify_user(email_field.value, password_field.value)
+        user, role = db_manager.verify_user(email_field.value, password_field.value)
 
         if user:
             page.snack_bar = ft.SnackBar(
@@ -75,8 +65,11 @@ def login_view(page: ft.Page):
             # Очистка полей
             email_field.value = ""
             password_field.value = ""
-            # Здесь можно добавить переход на главную страницу или панель управления
-            # page.go("/dashboard") # Пример
+            # Перенаправление в зависимости от роли
+            if role == UserRoleEnum.ADMIN:
+                page.go("/admin")
+            else:
+                page.go("/user")
         else:
             page.snack_bar = ft.SnackBar(
                 ft.Text("Неверная почта или пароль."), open=True

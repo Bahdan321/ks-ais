@@ -144,13 +144,16 @@ class DatabaseManager:
                 password.encode("utf-8"), user.password.encode("utf-8")
             ):
                 print(f"Пользователь {email} успешно аутентифицирован.")
-                return user  # Возвращаем объект пользователя при успехе
+                return (
+                    user,
+                    user.role,
+                )  # Возвращаем объект пользователя и его роль при успехе
             else:
                 print(f"Ошибка аутентификации для пользователя {email}.")
-                return None
+                return None, None
         except Exception as e:
             print(f"Ошибка при проверке пользователя: {e}")
-            return None
+            return None, None
         finally:
             session.close()
 
