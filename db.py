@@ -2,9 +2,10 @@ import os
 import psycopg2
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import joinedload
 from dotenv import load_dotenv
 import bcrypt
-from models.models import Client, UserRoleEnum  # Импортируем модель Client и Enum
+from models.models import Category, Client, UserRoleEnum, Product
 
 load_dotenv()
 
@@ -154,6 +155,111 @@ class DatabaseManager:
         except Exception as e:
             print(f"Ошибка при проверке пользователя: {e}")
             return None, None
+        finally:
+            session.close()
+
+    def get_all_products(self):
+        """Метод для получения всех товаров из базы данных с использованием ORM SQLAlchemy."""
+        if not self.Session:
+            print("Ошибка: Сессия базы данных не инициализирована.")
+            return []
+
+        session = self.Session()
+        try:
+            # Используем joinedload для загрузки связанных категорий за один запрос
+            products_query = session.query(Product).options(
+                joinedload(Product.category)
+            )
+
+            products_list = []
+            for product in products_query:
+                products_list.append(
+                    {
+                        "id": product.id,
+                        "name": product.name,
+                        "price": f"${float(product.price)}",
+                        "quantity": product.quantity,
+                        "category": (
+                            product.category.name
+                            if product.category
+                            else "Без категории"
+                        ),
+                        "warranty": product.warranty,
+                    }
+                )
+
+            print(f"Получено {len(products_list)} товаров из базы данных.")
+            return products_list
+        except Exception as e:
+            print(f"Ошибка при получении товаров: {e}")
+            return []
+        finally:
+            session.close()
+
+    def get_all_categories(self):
+        """
+        Метод для получения всех категорий товаров из базы данных.
+        Возвращает список словарей с информацией о категориях.
+        """
+        if not self.Session:
+            print("Ошибка: Сессия базы данных не инициализирована.")
+            return []
+
+        session = self.Session()
+        try:
+            categories = session.query(Category).all()
+            
+            categories_list = []
+            for category in categories:
+                categories_list.append({
+                    # "id": category.id,
+                    "name":category.name,
+                    # "description": category.description
+                })
+            
+            print(f"Получено {len(categories_list)} категорий из базы данных.")
+            return categories_list
+        except Exception as e:
+            print(f"Ошибка при получении категорий: {e}")
+            # Резервные данные в случае ошибки
+            return [
+                {"id": 1, "name": "Ноутбуки", "description": "Портативные компьютеры"},
+                # {"id": 2, "name": "Мониторы", "description": "Устройства отображения"},
+                # {"id": 3, "name": "Комплектующие", "description": "Детали для компьютеров"},
+                # {"id": 4, "name": "Периферия", "description": "Внешние устройства"},
+                # {"id": 5, "name": "Сетевое оборудование", "description": "Устройства для сети"}
+            ]
+        finally:
+            session.close()
+    def get_products_by_category(self, category_name):
+        """
+        Метод для получения товаров определенной категории.
+        """
+        if not self.Session:
+            print("Ошибка: Сессия базы данных не инициализирована.")
+            return []
+            
+        session = self.Session()
+        try:
+            # Объединяем таблицы Product и Category для фильтрации по имени категории
+            query = session.query(Product).join(Category).filter(Category.name == category_name)
+            
+            products_list = []
+            for product in query:
+                products_list.append({
+                    "id": product.id,
+                    "name": product.name,
+                    "price": f"${float(product.price)}",
+                    "quantity": product.quantity,
+                    "category": product.category.name if product.category else "Без категории",
+                    "warranty": product.warranty
+                })
+                
+            print(f"Получено {len(products_list)} товаров категории '{category_name}'")
+            return products_list
+        except Exception as e:
+            print(f"Ошибка при получении товаров категории '{category_name}': {e}")
+            return []
         finally:
             session.close()
 
