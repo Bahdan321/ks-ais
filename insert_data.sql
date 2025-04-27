@@ -39,10 +39,10 @@ INSERT INTO Product (name, price, quantity, warranty, category_id, supplier_id) 
 ('SSD Samsung 970 EVO Plus 1TB', 12990.00, 20, 60, 3, 3),
 ('Оперативная память Kingston Fury 16GB', 5990.00, 35, 60, 3, 1);
 
-INSERT INTO "orders" (order_date, status, client_id) VALUES
+INSERT INTO Orders (order_date, status, client_id) VALUES
 ('2023-05-10 14:30:00', 'Доставлено', 1),
 ('2023-05-15 11:20:00', 'Отправлено', 2),
-('2023-05-18 16:45:00', 'В процессе', 3),
+('2023-05-18 16:45:00', 'В_процессе', 3),
 ('2023-05-20 09:15:00', 'Собрано', 4),
 ('2023-05-22 13:10:00', 'Подтверждено', 5),
 ('2023-05-25 17:30:00', 'Создано', 1);

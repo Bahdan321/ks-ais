@@ -575,6 +575,123 @@ class DatabaseManager:
             return False, f"Ошибка: {e}"
         finally:
             session.close()
+    
+    def get_all_clients(self):
+        """
+        Получает список всех клиентов из базы данных.
+        """
+        try:
+            session = self.Session()
+            clients = session.query(Client).all()
+            
+            # Преобразуем объекты Client в словари с необходимыми данными
+            result = []
+            for client in clients:
+                result.append({
+                    "id": client.id,
+                    "full_name": client.full_name,
+                    "phone": client.phone,
+                    "email": client.email,
+                    "address": client.address,
+                    "role": client.role.value if client.role else None,
+                    # Не возвращаем пароль в целях безопасности
+                    "orders_count": len(client.orders)  # Количество заказов
+                })
+            
+            return result
+        except Exception as e:
+            print(f"Ошибка при получении клиентов: {e}")
+            return []
+        finally:
+            session.close()
+
+    def get_all_products(self):
+        """
+        Получает список всех товаров из базы данных с информацией о категории и поставщике.
+        """
+        try:
+            session = self.Session()
+            # Используем joinedload для загрузки связанных объектов одним запросом
+            products = session.query(Product).options(
+                joinedload(Product.category),
+                joinedload(Product.supplier)
+            ).all()
+            
+            # Преобразуем объекты Product в словари
+            result = []
+            for product in products:
+                result.append({
+                    "id": product.id,
+                    "name": product.name,
+                    "price": float(product.price) if product.price else 0,
+                    "quantity": product.quantity,
+                    "warranty": product.warranty,
+                    "category": {
+                        "id": product.category.id,
+                        "name": product.category.name
+                    } if product.category else None,
+                    "supplier": {
+                        "id": product.supplier.id,
+                        "name": product.supplier.name
+                    } if product.supplier else None
+                })
+            
+            return result
+        except Exception as e:
+            print(f"Ошибка при получении товаров: {e}")
+            return []
+        finally:
+            session.close()
+
+    def get_all_orders(self):
+        """
+        Получает список всех заказов с информацией о клиенте и товарах.
+        """
+        try:
+            session = self.Session()
+            # Загружаем связанные объекты
+            orders = session.query(Order).options(
+                joinedload(Order.client),
+                joinedload(Order.order_items).joinedload(OrderItem.product)
+            ).all()
+            
+            # Преобразуем объекты Order в словари
+            result = []
+            for order in orders:
+                # Рассчитываем общую сумму заказа
+                total_price = sum(float(item.price) * item.quantity for item in order.order_items)
+                
+                # Собираем информацию о товарах в заказе
+                items = []
+                for item in order.order_items:
+                    items.append({
+                        "product_id": item.product_id,
+                        "product_name": item.product.name if item.product else "Неизвестный товар",
+                        "quantity": item.quantity,
+                        "price": float(item.price) if item.price else 0
+                    })
+                
+                result.append({
+                    "id": order.id,
+                    "order_date": order.order_date.strftime("%Y-%m-%d %H:%M:%S") if order.order_date else None,
+                    "status": order.status.value if order.status else None,
+                    "client": {
+                        "id": order.client.id,
+                        "full_name": order.client.full_name,
+                        "phone": order.client.phone
+                    } if order.client else None,
+                    "total_price": total_price,
+                    "items_count": len(order.order_items),
+                    "items": items
+                })
+            
+            return result
+        except Exception as e:
+            print(f"Ошибка при получении заказов: {e}")
+            return []
+        finally:
+            session.close()
+
 
 
 db_manager = DatabaseManager()

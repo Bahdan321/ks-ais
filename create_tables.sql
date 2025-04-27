@@ -1,5 +1,5 @@
 drop TYPE if EXISTS order_status;
-CREATE TYPE order_status AS ENUM ('Создано', 'Подтверждено', 'В процессе', 'Собрано', 'Отправлено', 'Доставлено', 'Отменено', 'Возвращено');
+CREATE TYPE order_status AS ENUM ('Создано', 'Подтверждено', 'В_процессе', 'Собрано', 'Отправлено', 'Доставлено', 'Отменено', 'Возвращено');
 
 -- drop TABLE if EXISTS Client;
 CREATE TABLE Client (
