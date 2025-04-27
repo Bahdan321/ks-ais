@@ -170,7 +170,15 @@ def user_view(page: ft.Page, user_id: str):  # Добавляем user_id как
     # Получение всех товаров из базы данных
     def get_all_products():
         try:
-            return db_manager.get_all_products()
+            # return db_manager.get_all_products()
+            products = db_manager.get_all_products()
+
+            for p in products:
+                if isinstance(p.get("category"), dict):
+                    p["category"] = p["category"].get("name", "")
+
+            return products
+
         except Exception as e:
             print(f"Ошибка при получении товаров: {e}")
             # Резервные товары
@@ -337,8 +345,7 @@ def user_view(page: ft.Page, user_id: str):  # Добавляем user_id как
                 bgcolor=YELLOW_LIGHT,
                 border_radius=ft.border_radius.all(10),
             )
-        else:
-            # На десктопе - вертикальное меню
+        else:  # десктоп – тот же горизонтальный скролл, что и на мобилке
             return ft.Container(
                 content=ft.Column(
                     [
@@ -348,21 +355,25 @@ def user_view(page: ft.Page, user_id: str):  # Добавляем user_id как
                             weight=ft.FontWeight.BOLD,
                             color=PINK_DARK,
                         ),
-                        all_products_container,
-                        *category_items,
-                    ],
-                    spacing=8,
-                    scroll=ft.ScrollMode.AUTO,
+                        ft.Row(
+                            [all_products_container, *category_items],
+                            spacing=5,
+                            scroll=ft.ScrollMode.AUTO,
+                            wrap=True,
+                        ),
+                    ]
                 ),
                 padding=ft.padding.all(10),
                 bgcolor=YELLOW_LIGHT,
                 border_radius=ft.border_radius.all(10),
-                width=180,
-                margin=ft.margin.only(right=15),
             )
 
     # Создание карточки товара (без изменений)
     def create_product_card(product):
+        category_name = (
+            product["category"]["name"] if isinstance(product["category"], dict) else product["category"]
+        )
+
         warranty_info = (
             f", Гарантия: {product['warranty']} мес."
             if "warranty" in product and product["warranty"]
@@ -376,7 +387,8 @@ def user_view(page: ft.Page, user_id: str):  # Добавляем user_id как
                         # Название товара с ограничением и переносом
                         ft.Container(
                             content=ft.Text(
-                                product["name"],
+                                # product["name"],
+                                category_name,
                                 size=16,
                                 weight=ft.FontWeight.BOLD,
                                 color=PINK_DARK,
@@ -494,36 +506,17 @@ def user_view(page: ft.Page, user_id: str):  # Добавляем user_id как
 
     # Основной макет с учетом мобильного режима
     def build_layout():
-        is_mob = is_mobile(page)
+        # независимо от размера экрана категории идут сверху
+        return ft.Column(
+            [
+                header_layout(),
+                categories_layout(),
+                products_grid(),
+            ],
+            spacing=10,
+            expand=True,
+        )
 
-        # Для мобильного: вертикальное расположение
-        if is_mob:
-            return ft.Column(
-                [
-                    header_layout(),
-                    categories_layout(),
-                    products_grid(),
-                ],
-                spacing=10,
-                expand=True,
-            )
-        # Для десктопа: горизонтальный макет
-        else:
-            return ft.Column(
-                [
-                    header_layout(),
-                    ft.Row(
-                        [
-                            categories_layout(),
-                            products_grid(),
-                        ],
-                        expand=True,
-                        vertical_alignment=ft.CrossAxisAlignment.START,
-                    ),
-                ],
-                spacing=10,
-                expand=True,
-            )
 
     # Обработка изменения размера
     def page_resize(e):

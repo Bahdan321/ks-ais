@@ -8,6 +8,7 @@ from styles.colors import (
     PINK_DARK,
 )
 from db import db_manager
+from cart import cart_manager
 
 
 def cart_view(page: ft.Page, user_id: str):  # Добавляем user_id как параметр
@@ -99,21 +100,26 @@ def cart_view(page: ft.Page, user_id: str):  # Добавляем user_id как
             success, message, order_id = db_manager.create_order_from_cart(client_id)
 
             if success:
+                cart_items.clear()
+                cart_list.controls = []
+                total_price_text.value = "Итого: $0.00"
+                cart_manager.clear_cart(client_id)
+                page.update()
+
                 # Если заказ успешно создан
                 def close_dlg(e):
                     dlg.open = False
                     page.update()
-                    # Перенаправляем на страницу заказов с ID пользователя
                     page.go(f"/orders/{client_id}")
 
                 dlg = ft.AlertDialog(
                     title=ft.Text("Заказ оформлен!"),
                     content=ft.Text(f"{message}"),
-                    actions=[
-                        ft.TextButton("Мои заказы", on_click=close_dlg),
-                    ],
+                    actions=[ft.TextButton("Мои заказы", on_click=close_dlg)],
                     actions_alignment=ft.MainAxisAlignment.END,
                 )
+                page.open(dlg)
+                page.update()
             else:
                 # Если произошла ошибка
                 def close_dlg(e):
