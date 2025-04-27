@@ -26,18 +26,18 @@ INSERT INTO Warehouse (address, phone) VALUES
 ('Новосибирск, Красный пр., 100', '+7(383)444-55-66');
 
 INSERT INTO Product (name, price, quantity, warranty, category_id, supplier_id) VALUES
-('Ноутбук ASUS VivoBook 15', 54990.00, 12, 24, 1, 1),
-('Ноутбук Lenovo IdeaPad 3', 42990.00, 8, 12, 1, 2),
-('Монитор Samsung Odyssey G5', 34990.00, 15, 36, 2, 3),
-('Монитор LG 27UL500-W', 28990.00, 10, 24, 2, 1),
-('Процессор Intel Core i7-12700K', 31990.00, 25, 36, 3, 4),
-('Видеокарта NVIDIA RTX 3060 Ti', 45990.00, 5, 24, 3, 4),
-('Клавиатура Logitech G Pro', 8990.00, 30, 12, 4, 2),
-('Мышь Razer DeathAdder V2', 5990.00, 40, 12, 4, 3),
-('Роутер TP-Link Archer AX50', 12990.00, 18, 12, 5, 5),
-('Коммутатор D-Link DGS-1008A', 4990.00, 22, 12, 5, 5),
+('ASUS VivoBook 15', 54990.00, 12, 24, 1, 1),
+('Lenovo IdeaPad 3', 42990.00, 8, 12, 1, 2),
+('Samsung Odyssey G5', 34990.00, 15, 36, 2, 3),
+('LG 27UL500-W', 28990.00, 10, 24, 2, 1),
+('Intel Core i7-12700K', 31990.00, 25, 36, 3, 4),
+('NVIDIA RTX 3060 Ti', 45990.00, 5, 24, 3, 4),
+('Logitech G Pro', 8990.00, 30, 12, 4, 2),
+('Razer DeathAdder V2', 5990.00, 40, 12, 4, 3),
+('TP-Link Archer AX50', 12990.00, 18, 12, 5, 5),
+('D-Link DGS-1008A', 4990.00, 22, 12, 5, 5),
 ('SSD Samsung 970 EVO Plus 1TB', 12990.00, 20, 60, 3, 3),
-('Оперативная память Kingston Fury 16GB', 5990.00, 35, 60, 3, 1);
+('Kingston Fury 16GB', 5990.00, 35, 60, 3, 1);
 
 INSERT INTO Orders (order_date, status, client_id) VALUES
 ('2023-05-10 14:30:00', 'Доставлено', 1),

@@ -60,12 +60,6 @@ def admin_view(page: ft.Page):
     def show_delete_confirmation(item_type, item_id, item_name, on_confirm):
         """
         Показывает диалог подтверждения удаления
-        
-        Args:
-            item_type (str): Тип удаляемого элемента (клиент, товар, заказ)
-            item_id (int): ID элемента
-            item_name (str): Имя/название элемента
-            on_confirm (function): Функция, вызываемая при подтверждении
         """
         # Создаем обработчик закрытия для кнопки "Отмена"
         def handle_cancel(e):
@@ -205,95 +199,138 @@ def admin_view(page: ft.Page):
             ft.Text(description, color=TEXT),
         ], spacing=5)
         
-        # На мобильных устройствах используем таблицу с прокруткой
+        # Создание таблицы с учетом устройства
         if is_mob:
             # Создаем стандартную таблицу
             table = ft.DataTable(
                 columns=columns,
                 rows=rows,
-                # Установим минимальную ширину столбца для лучшего отображения
-                column_spacing=10,
+                column_spacing=10,  # Расстояние между колонками
+                border=ft.border.all(1, ft.colors.BLACK12),  # Добавляем рамку
+                heading_row_color=ft.colors.BLACK12,  # Цвет строки заголовка
             )
             
-            # Создаем индикаторы прокрутки, чтобы пользователям было понятно, что можно прокручивать
+            # Создаем индикаторы прокрутки
             scroll_indicators = ft.Row([
                 ft.Icon(ft.icons.SWIPE, color=PINK_DARK, size=18),
-                ft.Text("Прокрутите для просмотра", color=TEXT, size=12),
+                ft.Text("Прокрутите влево-вправо для просмотра всей таблицы", 
+                    color=TEXT, size=12),
             ], alignment=ft.MainAxisAlignment.CENTER)
             
-            # Горизонтальная прокрутка для контента таблицы
-            horizontal_scroll = ft.Container(
-                content=table,
-                border_radius=10,
-                bgcolor=ft.colors.WHITE,
-                padding=5,
-                shadow=ft.BoxShadow(
-                    spread_radius=1,
-                    blur_radius=5,
-                    color=ft.colors.with_opacity(0.15, ft.colors.BLACK)
-                ),
-                # Добавляем горизонтальную прокрутку
-                # scroll=ft.ScrollMode.AUTO
+            # Для горизонтальной прокрутки используем Row со scroll=True
+            table_row = ft.Row(
+                [
+                    ft.Container(
+                        content=table, 
+                        padding=10,
+                        bgcolor=ft.colors.WHITE,
+                        border_radius=10,
+                        shadow=ft.BoxShadow(
+                            spread_radius=1,
+                            blur_radius=5,
+                            color=ft.colors.with_opacity(0.15, ft.colors.BLACK)
+                        ),
+                        width=800  # Фиксированная большая ширина для активации скроллинга
+                    )
+                ],
+                scroll=ft.ScrollMode.AUTO,  # Горизонтальный скроллинг
+                vertical_alignment=ft.CrossAxisAlignment.START
             )
             
-            # Вертикальная прокрутка для всего содержимого
+            # Используем Column со scroll для вертикальной прокрутки
             return ft.Column([
                 header,
                 scroll_indicators,
-                # Контейнер с фиксированной высотой для вертикальной прокрутки
                 ft.Container(
-                    content=horizontal_scroll,
-                    height=350,  # Ограничиваем высоту, чтобы включить вертикальную прокрутку
-                    # Добавляем вертикальную прокрутку
-                    scroll=ft.ScrollMode.AUTO
+                    content=table_row,
+                    height=350,  # Ограничиваем высоту для вертикального скроллинга
                 )
-            ], spacing=10,scroll=ft.ScrollMode.ALWAYS)
-        
-        # Для планшета - таблица с горизонтальной прокруткой
+            ], 
+            spacing=10,
+            scroll=ft.ScrollMode.AUTO  # Вертикальный скроллинг
+            )
+            
+        # Для планшета
         elif is_tab:
             table = ft.DataTable(
                 columns=columns,
                 rows=rows,
+                # border=ft.border.all(1, ft.colors.BLACK12),
+                # heading_row_color=ft.colors.BLACK12,
             )
             
-            return ft.Column([header,
-                ft.Container(
-                    content=table,
-                    border_radius=10,
-                    bgcolor=ft.colors.WHITE,
-                    padding=10,
-                    shadow=ft.BoxShadow(
-                        spread_radius=1,
-                        blur_radius=5,
-                        color=ft.colors.with_opacity(0.15, ft.colors.BLACK)
-                    ),
-                )
-            ], spacing=15,)
-        
-        # Для десктопа - стандартная таблица
-        else:
+            # Используем тот же подход с Row для горизонтального скроллинга
+            table_row = ft.Row(
+                [
+                    ft.Container(
+                        content=table, 
+                        padding=10,
+                        bgcolor=ft.colors.WHITE,
+                        border_radius=10,
+                        shadow=ft.BoxShadow(
+                            spread_radius=1,
+                            blur_radius=5,
+                            color=ft.colors.with_opacity(0.15, ft.colors.BLACK)
+                        ),
+                        width=1000  # Большая ширина для скроллинга
+                    )
+                ],
+                scroll=ft.ScrollMode.AUTO,
+                vertical_alignment=ft.CrossAxisAlignment.START
+            )
+            
             return ft.Column([
                 header,
-                ft.Container(
-                    content=ft.DataTable(
-                        columns=columns,
-                        rows=rows,
-                    ),
-                    border_radius=10,
-                    bgcolor=ft.colors.WHITE,
-                    padding=10,
-                    shadow=ft.BoxShadow(
-                        spread_radius=1,
-                        blur_radius=5,
-                        color=ft.colors.with_opacity(0.15, ft.colors.BLACK)
-                    ),
-                )
-            ], spacing=15)
+                table_row
+            ], 
+            spacing=15,
+            scroll=ft.ScrollMode.AUTO,
+            height=500  # Фиксированная высота для Column
+            )
+            
+        # Для десктопа
+        else:
+            table = ft.DataTable(
+                columns=columns,
+                rows=rows,
+                border=ft.border.all(1, ft.colors.BLACK12),
+                heading_row_color=ft.colors.BLACK12,
+            )
+            
+            # Даже для десктопа добавляем скроллинг для больших таблиц
+            table_row = ft.Row(
+                [
+                    ft.Container(
+                        content=table, 
+                        padding=10,
+                        bgcolor=ft.colors.WHITE,
+                        border_radius=10,
+                        shadow=ft.BoxShadow(
+                            spread_radius=1,
+                            blur_radius=5,
+                            color=ft.colors.with_opacity(0.15, ft.colors.BLACK)
+                        ),
+                    )
+                ],
+                scroll=ft.ScrollMode.AUTO,
+                vertical_alignment=ft.CrossAxisAlignment.START
+            )
+            
+            return ft.Column([
+                header,
+                table_row
+            ], 
+            spacing=15,
+            scroll=ft.ScrollMode.AUTO,
+            height=600  # Больше места для десктопа
+            )
+
 
 
     # Создание панели с метриками (оставлено с вашими изменениями)
     def metrics_panel():
         is_mob = is_mobile(page)
+        is_tab = is_tablet(page)
         
         # Загрузка статистики из кэшированных данных
         client_count = len(cached_data["clients"]) if cached_data["clients"] is not None else "..."
@@ -313,67 +350,88 @@ def admin_view(page: ft.Page):
             {"icon": ft.icons.TRENDING_UP, "title": "Прибыль", "value": f"₽ {total_profit:,.2f}" if isinstance(total_profit, (int, float)) else total_profit},
         ]
 
-        metric_items = [
-            ft.Container(
-                content=ft.Column(
-                    [
-                        ft.Icon(metric["icon"], size=24, color=PINK_DARK),
-                        ft.Text(
-                            metric["title"],
-                            size=14,
-                            color=TEXT,
-                            weight=ft.FontWeight.W_500,
-                        ),
-                        ft.Text(
-                            metric["value"],
-                            size=20,
-                            color=PINK_DARK,
-                            weight=ft.FontWeight.BOLD,
-                        ),
-                    ],
-                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                    spacing=5,
-                ),
-                padding=ft.padding.all(15),
-                border_radius=ft.border_radius.all(10),
-                bgcolor=PINK_LIGHT,
-                width=110 if is_mob else 150,
-            )
-            for metric in metrics
-        ]
-
-        # Размещение метрик в ряд или столбец в зависимости от размера экрана
+        # Определяем размеры метрик в зависимости от устройства
         if is_mob:
-            metrics_layout = ft.Column(
-                [
-                    ft.Row(
-                        metric_items[:2], alignment=ft.MainAxisAlignment.SPACE_BETWEEN
-                    ),
-                    ft.Row(
-                        metric_items[2:], alignment=ft.MainAxisAlignment.SPACE_BETWEEN
-                    ),
-                ],
-                spacing=10,
-            )
+            metric_width = 145  # Уже на мобильных устройствах
+            padding = 10
+            icon_size = 22
+            title_size = 12
+            value_size = 18
+        elif is_tab:
+            metric_width = 180  # Средний размер для планшетов
+            padding = 15
+            icon_size = 24
+            title_size = 14
+            value_size = 20
         else:
-            metrics_layout = ft.Row(
-                metric_items,
-                spacing=10,
-                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+            metric_width = 240  # Широкие блоки для десктопа
+            padding = 20
+            icon_size = 28
+            title_size = 16
+            value_size = 24
+
+        # Создаем отдельные элементы метрик с учетом размеров устройства
+        metric_items = []
+        for metric in metrics:
+            metric_items.append(
+                ft.Container(
+                    content=ft.Column(
+                        [
+                            ft.Icon(metric["icon"], size=icon_size, color=PINK_DARK),
+                            ft.Text(
+                                metric["title"],
+                                size=title_size,
+                                color=TEXT,
+                                weight=ft.FontWeight.W_500,
+                            ),
+                            ft.Text(
+                                metric["value"],
+                                size=value_size,
+                                color=PINK_DARK,
+                                weight=ft.FontWeight.BOLD,
+                            ),
+                        ],
+                        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                        spacing=5,
+                    ),
+                    padding=ft.padding.all(padding),
+                    border_radius=ft.border_radius.all(10),
+                    bgcolor=PINK_LIGHT,
+                    width=metric_width,
+                    height=120 if is_mob else 140,  # Фиксируем высоту для единообразия
+                    expand=True,  # Это позволит контейнеру растягиваться в ряду
+                )
             )
+
+        # Разделяем метрики на две строки, по две метрики в каждой
+        # Всегда используем сетку 2x2 независимо от устройства
+        metrics_layout = ft.Column(
+            [
+                ft.Row(
+                    [metric_items[0], metric_items[1]],
+                    alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                ),
+                ft.Row(
+                    [metric_items[2], metric_items[3]],
+                    alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                ),
+            ],
+            spacing=10,
+        )
 
         return ft.Column(
             [
                 ft.Text(
                     "Статистика",
-                    size=18,
+                    size=18 if is_mob else 24,
                     weight=ft.FontWeight.BOLD,
                     color=PINK_DARK,
                 ),
                 metrics_layout,
             ],
-            spacing=10,
+            spacing=15,
         )
+
         
     # Определение различных видов контента с адаптивными таблицами
     def users_content():
