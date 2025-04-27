@@ -55,6 +55,143 @@ def admin_view(page: ft.Page):
         finally:
             page.splash = None
             page.update()
+    
+    # Функция для показа диалога подтверждения удаления
+    def show_delete_confirmation(item_type, item_id, item_name, on_confirm):
+        """
+        Показывает диалог подтверждения удаления
+        
+        Args:
+            item_type (str): Тип удаляемого элемента (клиент, товар, заказ)
+            item_id (int): ID элемента
+            item_name (str): Имя/название элемента
+            on_confirm (function): Функция, вызываемая при подтверждении
+        """
+        # Создаем обработчик закрытия для кнопки "Отмена"
+        def handle_cancel(e):
+            page.close(dialog)
+        
+        # Создаем обработчик для кнопки "Удалить"
+        def handle_delete(e):
+            page.close(dialog)
+            on_confirm(item_id)
+        
+        dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Text(f"Удаление {item_type}"),
+            content=ft.Text(f"Вы действительно хотите удалить {item_type} '{item_name}'? Это действие нельзя отменить."),
+            actions=[
+                ft.TextButton("Отмена", on_click=handle_cancel),
+                ft.TextButton(
+                    "Удалить", 
+                    on_click=handle_delete,
+                    style=ft.ButtonStyle(color=ft.colors.RED_500)
+                ),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        
+        # Открываем диалог
+        page.open(dialog)
+        return dialog
+
+    # Функция для показа сообщения об успехе/ошибке
+    def show_message(title, message, is_error=False):
+        """Показывает информационное сообщение"""
+        color = ft.colors.RED_500 if is_error else PINK_DARK
+        
+        # Обработчик закрытия для кнопки "ОК"
+        def handle_ok(e):
+            page.close(dialog)
+        
+        dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Text(title, color=color),
+            content=ft.Text(message),
+            actions=[
+                ft.TextButton("ОК", on_click=handle_ok),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        
+        page.open(dialog)
+        return dialog
+
+    # Функции для удаления записей
+
+    def delete_client_handler(e):
+        """Обработчик нажатия на кнопку удаления клиента"""
+        client_id = e.control.data  # ID клиента хранится в data кнопки
+        
+        # Находим информацию о клиенте для отображения в диалоге
+        client = next((c for c in cached_data["clients"] if c["id"] == client_id), None)
+        if not client:
+            return
+        
+        def confirm_delete(client_id):
+            # Выполняем удаление
+            success, message = db_manager.delete_client(client_id)
+            
+            # Показываем результат
+            title = "Успешно" if success else "Ошибка"
+            show_message(title, message, not success)
+            
+            # Если успешно, обновляем данные
+            if success:
+                cached_data["clients"] = None  # Сбрасываем кэш
+                executor.submit(load_data, "clients")  # Перезагружаем данные
+        
+        show_delete_confirmation("клиента", client_id, client["full_name"], confirm_delete)
+
+    def delete_product_handler(e):
+        """Обработчик нажатия на кнопку удаления товара"""
+        product_id = e.control.data  # ID товара хранится в data кнопки
+        
+        # Находим информацию о товаре для отображения в диалоге
+        product = next((p for p in cached_data["products"] if p["id"] == product_id), None)
+        if not product:
+            return
+        
+        def confirm_delete(product_id):
+            # Выполняем удаление
+            success, message = db_manager.delete_product(product_id)
+            
+            # Показываем результат
+            title = "Успешно" if success else "Ошибка"
+            show_message(title, message, not success)
+            
+            # Если успешно, обновляем данные
+            if success:
+                cached_data["products"] = None  # Сбрасываем кэш
+                executor.submit(load_data, "products")  # Перезагружаем данные
+        
+        show_delete_confirmation("товар", product_id, product["name"], confirm_delete)
+
+    def delete_order_handler(e):
+        """Обработчик нажатия на кнопку удаления заказа"""
+        order_id = e.control.data  # ID заказа хранится в data кнопки
+        
+        # Находим информацию о заказе для отображения в диалоге
+        order = next((o for o in cached_data["orders"] if o["id"] == order_id), None)
+        if not order:
+            return
+        
+        def confirm_delete(order_id):
+            # Выполняем удаление
+            success, message = db_manager.delete_order(order_id)
+            
+            # Показываем результат
+            title = "Успешно" if success else "Ошибка"
+            show_message(title, message, not success)
+            
+            # Если успешно, обновляем данные
+            if success:
+                cached_data["orders"] = None  # Сбрасываем кэш
+                executor.submit(load_data, "orders")  # Перезагружаем данные
+        
+        order_name = f"#{order['id']} от {order['order_date']}"
+        show_delete_confirmation("заказ", order_id, order_name, confirm_delete)
+
 
     
     # Функция для создания таблиц или карточек в зависимости от размера экрана
@@ -281,19 +418,19 @@ def admin_view(page: ft.Page):
                             ft.DataCell(ft.Text(client["role"] or "USER", color=TEXT)),
                             ft.DataCell(
                                 ft.Row([
-                                    ft.IconButton(
-                                        icon=ft.icons.EDIT, 
-                                        icon_color=PINK_DARK,
-                                        tooltip="Редактировать",
-                                        data=client["id"],
-                                        # on_click=edit_client
-                                    ),
+                                    # ft.IconButton(
+                                    #     icon=ft.icons.EDIT, 
+                                    #     icon_color=PINK_DARK,
+                                    #     tooltip="Редактировать",
+                                    #     data=client["id"],
+                                    #     # on_click=edit_client
+                                    # ),
                                     ft.IconButton(
                                         icon=ft.icons.DELETE, 
                                         icon_color=PINK_DARK,
                                         tooltip="Удалить",
                                         data=client["id"],
-                                        # on_click=delete_client
+                                        on_click=delete_client_handler
                                     ),
                                 ])
                             ),
@@ -356,19 +493,19 @@ def admin_view(page: ft.Page):
                             ft.DataCell(ft.Text(str(product["quantity"]), color=TEXT)),
                             ft.DataCell(
                                 ft.Row([
-                                    ft.IconButton(
-                                        icon=ft.icons.EDIT, 
-                                        icon_color=PINK_DARK,
-                                        tooltip="Редактировать",
-                                        data=product["id"],
-                                        # on_click=edit_product
-                                    ),
+                                    # ft.IconButton(
+                                    #     icon=ft.icons.EDIT, 
+                                    #     icon_color=PINK_DARK,
+                                    #     tooltip="Редактировать",
+                                    #     data=product["id"],
+                                    #     # on_click=edit_product
+                                    # ),
                                     ft.IconButton(
                                         icon=ft.icons.DELETE, 
                                         icon_color=PINK_DARK,
                                         tooltip="Удалить",
                                         data=product["id"],
-                                        # on_click=delete_product
+                                        on_click=delete_product_handler
                                     ),
                                 ])
                             ),
@@ -448,19 +585,26 @@ def admin_view(page: ft.Page):
                             )),
                             ft.DataCell(
                                 ft.Row([
-                                    ft.IconButton(
-                                        icon=ft.icons.RECEIPT_LONG, 
-                                        icon_color=PINK_DARK,
-                                        tooltip="Детали заказа",
-                                        data=order["id"],
-                                        # on_click=view_order_details
-                                    ),
+                                    # ft.IconButton(
+                                    #     icon=ft.icons.RECEIPT_LONG, 
+                                    #     icon_color=PINK_DARK,
+                                    #     tooltip="Детали заказа",
+                                    #     data=order["id"],
+                                    #     # on_click=view_order_details
+                                    # ),
                                     ft.IconButton(
                                         icon=ft.icons.EDIT, 
                                         icon_color=PINK_DARK,
                                         tooltip="Изменить статус",
                                         data=order["id"],
                                         # on_click=update_order_status
+                                    ),
+                                    ft.IconButton(
+                                        icon=ft.icons.DELETE, 
+                                        icon_color=PINK_DARK,
+                                        tooltip="Удалить заказ",
+                                        data=order["id"],
+                                        on_click=delete_order_handler
                                     ),
                                 ])
                             ),

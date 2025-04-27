@@ -13,6 +13,7 @@ from models.models import (
     Order,
     OrderItem,
     OrderStatusEnum,
+    ProductInWarehouse,
     UserRoleEnum,
     Product,
 )
@@ -689,6 +690,100 @@ class DatabaseManager:
         except Exception as e:
             print(f"Ошибка при получении заказов: {e}")
             return []
+        finally:
+            session.close()
+    
+    def delete_client(self, client_id):
+        """
+        Удаляет клиента из базы данных.
+        Если у клиента есть заказы, удаление будет отклонено.
+        """
+        session = self.Session()
+        try:
+            # Проверяем, существует ли клиент
+            client = session.query(Client).filter(Client.id == client_id).first()
+            if not client:
+                return False, f"Клиент с ID {client_id} не найден"
+            
+            # Проверяем, есть ли у клиента заказы
+            orders_count = session.query(Order).filter(Order.client_id == client_id).count()
+            if orders_count > 0:
+                return False, f"Невозможно удалить клиента, так как у него есть {orders_count} заказов"
+            
+            # Удаляем клиента
+            session.delete(client)
+            session.commit()
+            return True, f"Клиент '{client.full_name}' успешно удален"
+        
+        except Exception as e:
+            session.rollback()
+            return False, f"Ошибка при удалении клиента: {e}"
+        finally:
+            session.close()
+
+    def delete_product(self, product_id):
+        """
+        Удаляет товар из базы данных.
+        Если товар есть в заказах, удаление будет отклонено.
+        """
+        session = self.Session()
+        try:
+            # Проверяем, существует ли товар
+            product = session.query(Product).filter(Product.id == product_id).first()
+            if not product:
+                return False, f"Товар с ID {product_id} не найден"
+            
+            # Проверяем, есть ли товар в заказах
+            order_items_count = session.query(OrderItem).filter(OrderItem.product_id == product_id).count()
+            if order_items_count > 0:
+                return False, f"Невозможно удалить товар, так как он присутствует в {order_items_count} заказах"
+            
+            # Проверяем, есть ли товар на складах
+            warehouse_items_count = session.query(ProductInWarehouse).filter(
+                ProductInWarehouse.product_id == product_id
+            ).count()
+            if warehouse_items_count > 0:
+                # Удаляем записи о товаре на складах
+                session.query(ProductInWarehouse).filter(
+                    ProductInWarehouse.product_id == product_id
+                ).delete()
+            
+            # Удаляем товар
+            session.delete(product)
+            session.commit()
+            return True, f"Товар '{product.name}' успешно удален"
+        
+        except Exception as e:
+            session.rollback()
+            return False, f"Ошибка при удалении товара: {e}"
+        finally:
+            session.close()
+
+    def delete_order(self, order_id):
+        """
+        Удаляет заказ из базы данных вместе со всеми его позициями.
+        """
+        session = self.Session()
+        try:
+            # Проверяем, существует ли заказ
+            order = session.query(Order).filter(Order.id == order_id).first()
+            if not order:
+                return False, f"Заказ с ID {order_id} не найден"
+            
+            # Удаляем все позиции заказа
+            session.query(OrderItem).filter(OrderItem.order_id == order_id).delete()
+            
+            # Запоминаем информацию о заказе для сообщения
+            order_info = f"#{order.id} от {order.order_date.strftime('%d.%m.%Y')}"
+            
+            # Удаляем заказ
+            session.delete(order)
+            session.commit()
+            return True, f"Заказ {order_info} успешно удален"
+        
+        except Exception as e:
+            session.rollback()
+            return False, f"Ошибка при удалении заказа: {e}"
         finally:
             session.close()
 
