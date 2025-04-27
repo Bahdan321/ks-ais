@@ -248,6 +248,11 @@ def login_view(page: ft.Page):
             is_logging_in = False
             login_button_container.content = login_button
             page.update()
+        finally:
+            # Возвращаем кнопку в исходное состояние
+            is_logging_in = False
+            login_button_container.content = login_button
+            page.update()
 
     # Устанавливаем обработчик для кнопки
     login_button.on_click = login_click

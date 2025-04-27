@@ -759,80 +759,72 @@ def admin_view(page: ft.Page):
             {"title": "Отчеты", "icon": ft.icons.BAR_CHART, "action": lambda: switch_content(reports_content)},
         ]
         
-        # Для мобильной версии - возвращаем панель с иконками внизу экрана
+        # Для мобильной версии - компактные кнопки только с иконками
         if is_mob:
-            buttons = [
+            nav_buttons = [
                 ft.IconButton(
                     icon=item["icon"],
-                    icon_color=YELLOW_LIGHT,
-                    bgcolor=PINK_MEDIUM,
-                    icon_size=24,
+                    icon_color=PINK_DARK,
                     tooltip=item["title"],
                     on_click=lambda e, action=item["action"]: action(),
+                    style=ft.ButtonStyle(
+                        bgcolor={"hovered": PINK_LIGHT, "": ft.colors.TRANSPARENT},
+                    ),
                 ) for item in nav_items
             ]
             
+            # Горизонтальная прокрутка для кнопок
             return ft.Container(
                 content=ft.Row(
-                    buttons,
-                    alignment=ft.MainAxisAlignment.SPACE_AROUND,
+                    nav_buttons,
+                    scroll=ft.ScrollMode.AUTO,
+                    spacing=10,
+                    alignment=ft.MainAxisAlignment.START,
                 ),
-                padding=ft.padding.symmetric(vertical=10),
+                padding=ft.padding.symmetric(vertical=5, horizontal=10),
                 bgcolor=YELLOW_LIGHT,
-                border=ft.border.only(top=ft.BorderSide(1, PINK_LIGHT)),
+                border=ft.border.only(bottom=ft.BorderSide(1, PINK_LIGHT)),
+                height=50,
             )
         
-        # Для планшета - компактная боковая панель с иконками и короткими подписями
+        # Для планшета - кнопки с иконками и короткими подписями
         elif is_tab:
             nav_buttons = [
                 ft.Container(
-                    content=ft.Column([
-                        ft.Icon(item["icon"], size=24, color=PINK_DARK),
+                    content=ft.Row([
+                        ft.Icon(item["icon"], size=20, color=PINK_DARK),
                         ft.Text(
                             item["title"],
                             size=12,
                             color=PINK_DARK,
-                            text_align=ft.TextAlign.CENTER,
                         ),
-                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=5),
+                    ], spacing=5),
                     padding=ft.padding.all(10),
                     border_radius=ft.border_radius.all(5),
                     bgcolor=PINK_LIGHT,
-                    margin=ft.margin.only(bottom=5),
-                    width=90,
-                    height=75,
+                    margin=ft.margin.only(right=10),
                     ink=True,
                     on_click=lambda e, action=item["action"]: action(),
                 ) for item in nav_items
             ]
             
+            # Горизонтальная прокрутка для кнопок
             return ft.Container(
-                content=ft.Column(
-                    [
-                        ft.Container(
-                            content=ft.Text(
-                                "Меню",
-                                weight=ft.FontWeight.BOLD,
-                                color=PINK_DARK,
-                                text_align=ft.TextAlign.CENTER,
-                            ),
-                            padding=ft.padding.symmetric(vertical=10),
-                        ),
-                        *nav_buttons,
-                    ],
-                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                content=ft.Row(
+                    nav_buttons,
+                    scroll=ft.ScrollMode.AUTO,
                     spacing=5,
+                    alignment=ft.MainAxisAlignment.START,
                 ),
-                width=100,
-                border_radius=ft.border_radius.all(10),
-                border=ft.border.all(1, PINK_LIGHT),
-                margin=ft.margin.only(right=10),
                 padding=ft.padding.all(10),
+                bgcolor=YELLOW_LIGHT,
+                border=ft.border.only(bottom=ft.BorderSide(1, PINK_LIGHT)),
+                height=70,
             )
         
-        # Для десктопа - полная боковая панель
+        # Для десктопа - полноразмерные кнопки с подписями
         else:
-            nav_items_full = [
+            nav_buttons = [
                 ft.Container(
                     content=ft.Row(
                         [
@@ -845,42 +837,29 @@ def admin_view(page: ft.Page):
                         ],
                         spacing=10,
                     ),
-                    padding=ft.padding.all(10),
+                    padding=ft.padding.all(15),
                     border_radius=ft.border_radius.all(5),
                     bgcolor=PINK_LIGHT,
-                    margin=ft.margin.only(bottom=5),
+                    margin=ft.margin.only(right=15),
                     ink=True,
                     on_click=lambda e, action=item["action"]: action(),
                 ) for item in nav_items
             ]
             
+            # Для десктопа прокрутка обычно не нужна, но добавим на всякий случай
             return ft.Container(
-                content=ft.Column(
-                    [
-                        ft.Container(
-                            content=ft.Row(
-                                [
-                                    ft.Icon(ft.icons.MENU, color=PINK_DARK),
-                                    ft.Text(
-                                        "Навигация",
-                                        weight=ft.FontWeight.BOLD,
-                                        color=PINK_DARK,
-                                    ),
-                                ],
-                                spacing=10,
-                            ),
-                            padding=ft.padding.all(10),
-                        ),
-                        *nav_items_full,
-                    ],
+                content=ft.Row(
+                    nav_buttons,
+                    scroll=ft.ScrollMode.AUTO,
                     spacing=5,
+                    alignment=ft.MainAxisAlignment.START,
                 ),
-                width=250,
-                border_radius=ft.border_radius.all(10),
-                border=ft.border.all(1, PINK_LIGHT),
-                margin=ft.margin.only(right=15),
                 padding=ft.padding.all(10),
+                bgcolor=YELLOW_LIGHT,
+                border=ft.border.only(bottom=ft.BorderSide(1, PINK_LIGHT)),
+                height=80,
             )
+
 
     # Заголовок панели администратора
     def admin_header():
@@ -932,8 +911,10 @@ def admin_view(page: ft.Page):
             padding=ft.padding.all(15),
             bgcolor=YELLOW_LIGHT,
             border=ft.border.only(bottom=ft.BorderSide(1, PINK_LIGHT)),
-            margin=ft.margin.only(bottom=10),
+            # Убираем нижний отступ, так как теперь за ним следует навигация
+            margin=ft.margin.all(0),
         )
+
 
     # Основной макет с учетом мобильного режима
     def build_layout():
@@ -951,43 +932,24 @@ def admin_view(page: ft.Page):
             ref=current_content,
         )
         
-        # Получаем навигацию
+        # Получаем заголовок и навигацию
+        header = admin_header()
         navigation = build_navigation()
+        
+        # Новая структура с навигацией сверху (одинаковая для всех устройств)
+        return ft.Column(
+            [
+                header,
+                navigation,  # Теперь навигация сверху
+                ft.Container(
+                    content=content_container,
+                    padding=ft.padding.symmetric(horizontal=10 if is_mob else 15),
+                    expand=True,
+                ),
+            ],
+            expand=True,
+        )
 
-        # Для мобильного: вертикальное расположение
-        if is_mob:
-            return ft.Column(
-                [
-                    admin_header(),
-                    ft.Container(
-                        content=content_container,
-                        padding=ft.padding.symmetric(horizontal=5),
-                        expand=True,
-                    ),
-                    navigation,  # Нижняя панель навигации
-                ],
-                expand=True,
-            )
-        # Для планшета и десктопа: горизонтальный макет с боковой панелью
-        else:
-            return ft.Column(
-                [
-                    admin_header(),
-                    ft.Row(
-                        [
-                            navigation,  # Боковая панель навигации
-                            ft.Container(
-                                content=content_container,
-                                expand=True,
-                                padding=ft.padding.only(right=15) if is_tab else ft.padding.all(0),
-                            ),
-                        ],
-                        expand=True,
-                        vertical_alignment=ft.CrossAxisAlignment.START,
-                    ),
-                ],
-                expand=True,
-            )
 
     # Обработка изменения размера
     def page_resize(e):
