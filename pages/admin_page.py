@@ -245,12 +245,12 @@ def admin_view(page: ft.Page):
         
         # Колонки таблицы остаются прежними
         columns = [
-            ft.DataColumn(ft.Text("ID")),
-            ft.DataColumn(ft.Text("Имя")),
-            ft.DataColumn(ft.Text("Email")),
-            ft.DataColumn(ft.Text("Телефон")),
-            ft.DataColumn(ft.Text("Роль")),
-            ft.DataColumn(ft.Text("Действия")),
+            ft.DataColumn(ft.Text("ID", color=TEXT)),
+            ft.DataColumn(ft.Text("Имя", color=TEXT)),
+            ft.DataColumn(ft.Text("Email", color=TEXT)),
+            ft.DataColumn(ft.Text("Телефон", color=TEXT)),
+            ft.DataColumn(ft.Text("Роль", color=TEXT)),
+            ft.DataColumn(ft.Text("Действия", color=TEXT)),
         ]
         
         rows = []
@@ -274,11 +274,11 @@ def admin_view(page: ft.Page):
                 rows.append(
                     ft.DataRow(
                         cells=[
-                            ft.DataCell(ft.Text(str(client["id"]))),
-                            ft.DataCell(ft.Text(client["full_name"])),
-                            ft.DataCell(ft.Text(client["email"] or "-")),
-                            ft.DataCell(ft.Text(client["phone"])),
-                            ft.DataCell(ft.Text(client["role"] or "USER")),
+                            ft.DataCell(ft.Text(str(client["id"]), color=TEXT)),
+                            ft.DataCell(ft.Text(client["full_name"], color=TEXT)),
+                            ft.DataCell(ft.Text(client["email"] or "-", color=TEXT)),
+                            ft.DataCell(ft.Text(client["phone"], color=TEXT)),
+                            ft.DataCell(ft.Text(client["role"] or "USER", color=TEXT)),
                             ft.DataCell(
                                 ft.Row([
                                     ft.IconButton(
@@ -317,12 +317,12 @@ def admin_view(page: ft.Page):
         executor.submit(load_data, "products")
         
         columns = [
-            ft.DataColumn(ft.Text("ID")),
-            ft.DataColumn(ft.Text("Название")),
-            ft.DataColumn(ft.Text("Категория")),
-            ft.DataColumn(ft.Text("Цена")),
-            ft.DataColumn(ft.Text("Остаток")),
-            ft.DataColumn(ft.Text("Действия")),
+            ft.DataColumn(ft.Text("ID", color=TEXT)),
+            ft.DataColumn(ft.Text("Название", color=TEXT)),
+            ft.DataColumn(ft.Text("Категория", color=TEXT)),
+            ft.DataColumn(ft.Text("Цена", color=TEXT)),
+            ft.DataColumn(ft.Text("Остаток", color=TEXT)),
+            ft.DataColumn(ft.Text("Действия", color=TEXT)),
         ]
         
         rows = []
@@ -349,11 +349,11 @@ def admin_view(page: ft.Page):
                 rows.append(
                     ft.DataRow(
                         cells=[
-                            ft.DataCell(ft.Text(str(product["id"]))),
-                            ft.DataCell(ft.Text(product["name"])),
-                            ft.DataCell(ft.Text(category_name)),
-                            ft.DataCell(ft.Text(f"₽ {product['price']:,.2f}")),
-                            ft.DataCell(ft.Text(str(product["quantity"]))),
+                            ft.DataCell(ft.Text(str(product["id"]), color=TEXT)),
+                            ft.DataCell(ft.Text(product["name"], color=TEXT)),
+                            ft.DataCell(ft.Text(category_name, color=TEXT)),
+                            ft.DataCell(ft.Text(f"₽ {product['price']:,.2f}", color=TEXT)),
+                            ft.DataCell(ft.Text(str(product["quantity"]), color=TEXT)),
                             ft.DataCell(
                                 ft.Row([
                                     ft.IconButton(
@@ -392,12 +392,12 @@ def admin_view(page: ft.Page):
         executor.submit(load_data, "orders")
         
         columns = [
-            ft.DataColumn(ft.Text("ID")),
-            ft.DataColumn(ft.Text("Клиент")),
-            ft.DataColumn(ft.Text("Дата")),
-            ft.DataColumn(ft.Text("Сумма")),
-            ft.DataColumn(ft.Text("Статус")),
-            ft.DataColumn(ft.Text("Действия")),
+            ft.DataColumn(ft.Text("ID", color=TEXT)),
+            ft.DataColumn(ft.Text("Клиент", color=TEXT)),
+            ft.DataColumn(ft.Text("Дата", color=TEXT)),
+            ft.DataColumn(ft.Text("Сумма", color=TEXT)),
+            ft.DataColumn(ft.Text("Статус", color=TEXT)),
+            ft.DataColumn(ft.Text("Действия", color=TEXT)),
         ]
         
         rows = []
@@ -436,10 +436,10 @@ def admin_view(page: ft.Page):
                 rows.append(
                     ft.DataRow(
                         cells=[
-                            ft.DataCell(ft.Text(str(order["id"]))),
-                            ft.DataCell(ft.Text(client_name)),
-                            ft.DataCell(ft.Text(order["order_date"])),
-                            ft.DataCell(ft.Text(f"₽ {order['total_price']:,.2f}")),
+                            ft.DataCell(ft.Text(str(order["id"]), color=TEXT)),
+                            ft.DataCell(ft.Text(client_name, color=TEXT)),
+                            ft.DataCell(ft.Text(order["order_date"], color=TEXT)),
+                            ft.DataCell(ft.Text(f"₽ {order['total_price']:,.2f}", color=TEXT)),
                             ft.DataCell(ft.Container(
                                 content=ft.Text(status_text, color=text_color),
                                 bgcolor=bg_color, 
@@ -496,30 +496,30 @@ def admin_view(page: ft.Page):
                        size=20, weight=ft.FontWeight.BOLD, color=PINK_DARK),
                 ft.Text("Здесь вы можете просматривать аналитические данные и отчеты", color=TEXT),
                 # Примеры элементов для отчетов
-                ft.Row([
-                    ft.Container(
-                        content=ft.Column([
-                            ft.Text("Продажи по категориям", weight=ft.FontWeight.BOLD, color=PINK_DARK),
-                            # Здесь можно добавить график или диаграмму
-                        ]),
-                        padding=15,
-                        border_radius=10,
-                        bgcolor=PINK_LIGHT,
-                        expand=True,
-                        height=200,
-                    ),
-                    ft.Container(
-                        content=ft.Column([
-                            ft.Text("Динамика продаж", weight=ft.FontWeight.BOLD, color=PINK_DARK),
-                            # Здесь можно добавить график или диаграмму
-                        ]),
-                        padding=15,
-                        border_radius=10,
-                        bgcolor=PINK_LIGHT,
-                        expand=True,
-                        height=200,
-                    ),
-                ], spacing=10),
+                # ft.Row([
+                #     ft.Container(
+                #         content=ft.Column([
+                #             ft.Text("Продажи по категориям", weight=ft.FontWeight.BOLD, color=PINK_DARK),
+                #             # Здесь можно добавить график или диаграмму
+                #         ]),
+                #         padding=15,
+                #         border_radius=10,
+                #         bgcolor=PINK_LIGHT,
+                #         expand=True,
+                #         height=200,
+                #     ),
+                #     ft.Container(
+                #         content=ft.Column([
+                #             ft.Text("Динамика продаж", weight=ft.FontWeight.BOLD, color=PINK_DARK),
+                #             # Здесь можно добавить график или диаграмму
+                #         ]),
+                #         padding=15,
+                #         border_radius=10,
+                #         bgcolor=PINK_LIGHT,
+                #         expand=True,
+                #         height=200,
+                #     ),
+                # ], spacing=10),
             ], spacing=15),
             padding=15,
         )
