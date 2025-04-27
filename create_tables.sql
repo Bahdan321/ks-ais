@@ -68,3 +68,5 @@ CREATE TYPE user_role AS ENUM ('USER', 'ADMIN');
 
 ALTER TABLE Client ADD COLUMN role user_role NOT NULL DEFAULT 'USER';
 ALTER TABLE Client ADD COLUMN password VARCHAR(255);
+ALTER TABLE "public"."Order"
+RENAME TO "orders"

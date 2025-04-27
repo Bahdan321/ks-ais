@@ -56,20 +56,57 @@ def login_view(page: ft.Page):
             page.update()
             return
 
-        user, role = db_manager.verify_user(email_field.value, password_field.value)
+        # Проверяем учетные данные пользователя
+        success, user_data = db_manager.verify_user(
+            email_field.value, password_field.value
+        )
 
-        if user:
+        if success:
+            # Сохраняем ID пользователя в сессии
+            try:
+                page.session.set("user_id", user_data["id"])
+                page.session.set("user_name", user_data["name"])
+                # Преобразуем Enum в строку перед сохранением
+                page.session.set(
+                    "user_role",
+                    (
+                        str(user_data["role"].value)
+                        if isinstance(user_data["role"], UserRoleEnum)
+                        else user_data["role"]
+                    ),
+                )
+                print(
+                    f"[DEBUG login_page] Session after set: user_id={page.session.get('user_id')}, user_name={page.session.get('user_name')}, user_role={page.session.get('user_role')}"
+                )  # Отладка
+                page.update()  # Обновляем страницу, чтобы сохранить сессию ПЕРЕД редиректом
+            except Exception as e:
+                print(f"Ошибка при сохранении данных сессии: {e}")
+                page.snack_bar = ft.SnackBar(
+                    ft.Text("Ошибка при сохранении данных сессии."), open=True
+                )
+                page.update()
+                return
+
             page.snack_bar = ft.SnackBar(
-                ft.Text(f"Добро пожаловать, {user.full_name}!"), open=True
+                ft.Text(f"Добро пожаловать, {user_data['name']}!"), open=True
             )
+
             # Очистка полей
             email_field.value = ""
             password_field.value = ""
+
+            print(
+                f"[DEBUG login_page] Session before redirect: user_id={page.session.get('user_id')}, user_name={page.session.get('user_name')}, user_role={page.session.get('user_role')}"
+            )  # Отладка
             # Перенаправление в зависимости от роли
-            if role == UserRoleEnum.ADMIN:
-                page.go("/admin")
+            user_id = user_data["id"]  # Получаем ID пользователя
+            # Сравниваем строковое представление роли из сессии
+            if page.session.get("user_role") == UserRoleEnum.ADMIN.value:
+                page.go(
+                    "/admin"
+                )  # Для админа оставляем как есть или передаем ID, если нужно
             else:
-                page.go("/user")
+                page.go(f"/user/{user_id}")  # Передаем user_id в URL
         else:
             page.snack_bar = ft.SnackBar(
                 ft.Text("Неверная почта или пароль."), open=True

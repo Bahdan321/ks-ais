@@ -17,14 +17,14 @@ Base = declarative_base()
 
 
 class OrderStatusEnum(enum.Enum):
-    CREATED = "Создано"
-    CONFIRMED = "Подтверждено"
-    PROCESSING = "В процессе"
-    ASSEMBLED = "Собрано"
-    SHIPPED = "Отправлено"
-    DELIVERED = "Доставлено"
-    CANCELLED = "Отменено"
-    RETURNED = "Возвращено"
+    Создано = "Создано"
+    Подтверждено = "Подтверждено"
+    В_процессе = "В процессе"
+    Собрано = "Собрано"
+    Отправлено = "Отправлено"
+    Доставлено = "Доставлено"
+    Отменено = "Отменено"
+    Возвращено = "Возвращено"
 
 
 class UserRoleEnum(enum.Enum):
@@ -98,12 +98,12 @@ class Product(Base):
 
 class Order(Base):
     __tablename__ = (
-        "order"  # Имя таблицы в кавычках, т.к. Order - зарезервированное слово в SQL
+        "orders"  # Имя таблицы в кавычках, т.к. Order - зарезервированное слово в SQL
     )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     order_date = Column(DateTime, default=func.current_timestamp())
-    status = Column(Enum(OrderStatusEnum), default=OrderStatusEnum.CREATED)
+    status = Column(Enum(OrderStatusEnum), default=OrderStatusEnum.Создано)
     client_id = Column(Integer, ForeignKey("client.id"))
 
     client = relationship("Client", back_populates="orders")
@@ -113,7 +113,7 @@ class Order(Base):
 class OrderItem(Base):
     __tablename__ = "orderitem"
 
-    order_id = Column(Integer, ForeignKey("order.id"), primary_key=True)
+    order_id = Column(Integer, ForeignKey("orders.id"), primary_key=True)
     product_id = Column(Integer, ForeignKey("product.id"), primary_key=True)
     quantity = Column(Integer, nullable=False)
     price = Column(Numeric(10, 2), nullable=False)

@@ -1,3 +1,4 @@
+import datetime
 import os
 import psycopg2
 from sqlalchemy import create_engine, text
@@ -5,7 +6,16 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import joinedload
 from dotenv import load_dotenv
 import bcrypt
-from models.models import Category, Client, UserRoleEnum, Product
+from cart import CartManager, cart_manager
+from models.models import (
+    Category,
+    Client,
+    Order,
+    OrderItem,
+    OrderStatusEnum,
+    UserRoleEnum,
+    Product,
+)
 
 load_dotenv()
 
@@ -133,28 +143,36 @@ class DatabaseManager:
             session.close()
 
     def verify_user(self, email, password):
-        """Метод для проверки учетных данных пользователя."""
+        """
+        Проверяет учетные данные пользователя.
+        """
         if not self.Session:
-            print("Ошибка: Сессия базы данных не инициализирована.")
-            return None
+            return False, None
 
         session = self.Session()
         try:
-            user = session.query(Client).filter_by(email=email).first()
-            if user and bcrypt.checkpw(
-                password.encode("utf-8"), user.password.encode("utf-8")
-            ):
-                print(f"Пользователь {email} успешно аутентифицирован.")
-                return (
-                    user,
-                    user.role,
-                )  # Возвращаем объект пользователя и его роль при успехе
+            # Находим пользователя по email
+            user = session.query(Client).filter(Client.email == email).first()
+
+            if not user:
+                return False, None
+
+            # Проверяем пароль
+            if bcrypt.checkpw(password.encode("utf-8"), user.password.encode("utf-8")):
+                # Возвращаем данные о пользователе
+                user_data = {
+                    "id": user.id,
+                    "name": user.full_name,
+                    "role": user.role,
+                    "email": user.email,
+                }
+                print(user_data)
+                return True, user_data
             else:
-                print(f"Ошибка аутентификации для пользователя {email}.")
-                return None, None
+                return False, None
         except Exception as e:
             print(f"Ошибка при проверке пользователя: {e}")
-            return None, None
+            return False, None
         finally:
             session.close()
 
@@ -208,15 +226,17 @@ class DatabaseManager:
         session = self.Session()
         try:
             categories = session.query(Category).all()
-            
+
             categories_list = []
             for category in categories:
-                categories_list.append({
-                    # "id": category.id,
-                    "name":category.name,
-                    # "description": category.description
-                })
-            
+                categories_list.append(
+                    {
+                        # "id": category.id,
+                        "name": category.name,
+                        # "description": category.description
+                    }
+                )
+
             print(f"Получено {len(categories_list)} категорий из базы данных.")
             return categories_list
         except Exception as e:
@@ -231,6 +251,7 @@ class DatabaseManager:
             ]
         finally:
             session.close()
+
     def get_products_by_category(self, category_name):
         """
         Метод для получения товаров определенной категории.
@@ -238,28 +259,320 @@ class DatabaseManager:
         if not self.Session:
             print("Ошибка: Сессия базы данных не инициализирована.")
             return []
-            
+
         session = self.Session()
         try:
             # Объединяем таблицы Product и Category для фильтрации по имени категории
-            query = session.query(Product).join(Category).filter(Category.name == category_name)
-            
+            query = (
+                session.query(Product)
+                .join(Category)
+                .filter(Category.name == category_name)
+            )
+
             products_list = []
             for product in query:
-                products_list.append({
-                    "id": product.id,
-                    "name": product.name,
-                    "price": f"${float(product.price)}",
-                    "quantity": product.quantity,
-                    "category": product.category.name if product.category else "Без категории",
-                    "warranty": product.warranty
-                })
-                
+                products_list.append(
+                    {
+                        "id": product.id,
+                        "name": product.name,
+                        "price": f"${float(product.price)}",
+                        "quantity": product.quantity,
+                        "category": (
+                            product.category.name
+                            if product.category
+                            else "Без категории"
+                        ),
+                        "warranty": product.warranty,
+                    }
+                )
+
             print(f"Получено {len(products_list)} товаров категории '{category_name}'")
             return products_list
         except Exception as e:
             print(f"Ошибка при получении товаров категории '{category_name}': {e}")
             return []
+        finally:
+            session.close()
+
+    def get_user_orders(self, client_id):
+        """
+        Получает все заказы указанного пользователя вместе с информацией о товарах.
+        """
+        if not self.Session:
+            print("Ошибка: Сессия базы данных не инициализирована.")
+            return []
+
+        session = self.Session()
+        try:
+            # Получаем все заказы пользователя
+            orders = (
+                session.query(Order)
+                .filter(Order.client_id == client_id)
+                .order_by(Order.order_date.desc())
+                .all()
+            )
+
+            orders_list = []
+            for order in orders:
+                # Получаем элементы заказа с информацией о товарах
+                order_items = (
+                    session.query(OrderItem)
+                    .filter(OrderItem.order_id == order.id)
+                    .options(joinedload(OrderItem.product))
+                    .all()
+                )
+
+                # Создаем список товаров в заказе
+                items = []
+                total_price = 0
+
+                for item in order_items:
+                    # Получаем категорию товара
+                    category_name = (
+                        item.product.category.name
+                        if item.product.category
+                        else "Без категории"
+                    )
+
+                    # Рассчитываем стоимость позиции (цена * количество)
+                    item_price = float(item.price) * item.quantity
+                    total_price += item_price
+
+                    items.append(
+                        {
+                            "id": item.product.id,
+                            "name": item.product.name,
+                            "category": category_name,
+                            "quantity": item.quantity,
+                            "price": f"${float(item.price)}",
+                            "total_price": f"${item_price:.2f}",
+                        }
+                    )
+
+                # Форматируем дату для отображения
+                order_date = (
+                    order.order_date.strftime("%d.%m.%Y %H:%M")
+                    if order.order_date
+                    else "Дата не указана"
+                )
+
+                # Собираем информацию о заказе
+                orders_list.append(
+                    {
+                        "id": order.id,
+                        "date": order_date,
+                        "status": order.status.value,  # Используем значение из enum
+                        "items": items,
+                        "total_price": f"${total_price:.2f}",
+                        "items_count": len(items),
+                    }
+                )
+
+            print(f"Получено {len(orders_list)} заказов для пользователя {client_id}")
+            return orders_list
+        except Exception as e:
+            print(f"Ошибка при получении заказов пользователя: {e}")
+            return []
+        finally:
+            session.close()
+
+    def create_order_from_cart(self, client_id):
+        """
+        Создает заказ на основе корзины пользователя.
+        """
+        if not self.Session:
+            return False, "Ошибка подключения к базе данных", None
+
+        session = self.Session()
+        try:
+            print(2222222, client_id)
+            # Получаем корзину пользователя
+            cart_items = cart_manager.get_cart(client_id)
+
+            if not cart_items:
+                return False, "Корзина пуста", None
+
+            # Проверяем наличие товаров в нужном количестве
+            for item in cart_items:
+                product = session.query(Product).get(item["product_id"])
+                if not product:
+                    return False, f"Товар с ID {item['product_id']} не найден", None
+
+                if product.quantity < item["quantity"]:
+                    return (
+                        False,
+                        f"Недостаточное количество товара '{product.name}' на складе",
+                        None,
+                    )
+
+            # Создаем новый заказ
+            new_order = Order(
+                client_id=client_id,
+                status=OrderStatusEnum.Создано,
+                order_date=datetime.datetime.now(),
+            )
+            session.add(new_order)
+            session.flush()  # Получаем ID нового заказа
+
+            # Добавляем товары в заказ
+            for item in cart_items:
+                product = session.get(Product, item["product_id"])
+
+                # Создаем запись в OrderItem
+                order_item = OrderItem(
+                    order_id=new_order.id,
+                    product_id=product.id,
+                    quantity=item["quantity"],
+                    price=product.price,
+                )
+                session.add(order_item)
+
+                # Уменьшаем количество товара на складе
+                product.quantity -= item["quantity"]
+
+                # Сохраняем изменения
+                session.commit()
+
+                # Очищаем корзину пользователя
+                cart_manager.clear_cart(client_id)
+
+                return True, f"Заказ №{new_order.id} успешно создан", new_order.id
+
+        except Exception as e:
+            session.rollback()
+            print(f"Ошибка при создании заказа: {e}")
+            return False, f"Ошибка при создании заказа: {e}", None
+        finally:
+            session.close()
+
+    def get_user_orders(self, client_id):
+        """
+        Получает список всех заказов пользователя.
+        """
+        if not self.Session:
+            return []
+
+        session = self.Session()
+        try:
+            # Получаем все заказы пользователя
+            orders = (
+                session.query(Order)
+                .filter(Order.client_id == client_id)
+                .order_by(Order.order_date.desc())
+                .all()
+            )
+
+            result = []
+            for order in orders:
+                # Для каждого заказа получаем его товары
+                order_items = []
+                total_price = 0
+
+                for item in order.order_items:
+                    product = item.product
+                    item_price = float(item.price) * item.quantity
+                    total_price += item_price
+
+                    order_items.append(
+                        {
+                            "product_id": product.id,
+                            "name": product.name,
+                            "quantity": item.quantity,
+                            "price": float(item.price),
+                            "total_item_price": item_price,
+                        }
+                    )
+
+                result.append(
+                    {
+                        "order_id": order.id,
+                        "order_date": order.order_date.strftime("%d.%m.%Y %H:%M"),
+                        "status": order.status.value,
+                        "items": order_items,
+                        "total_price": total_price,
+                    }
+                )
+
+            return result
+        except Exception as e:
+            print(f"Ошибка при получении заказов пользователя: {e}")
+            return []
+        finally:
+            session.close()
+
+    def get_cart_products(self, client_id):
+        """
+        Получает информацию о товарах в корзине пользователя.
+        """
+        if not self.Session:
+            return []
+
+        session = self.Session()
+        try:
+            cart_items = cart_manager.get_cart(client_id)
+            result = []
+
+            for item in cart_items:
+                product = (
+                    session.query(Product)
+                    .options(joinedload(Product.category))
+                    .get(item["product_id"])
+                )
+                if product:
+                    result.append(
+                        {
+                            "id": product.id,
+                            "name": product.name,
+                            "category": (
+                                product.category.name
+                                if product.category
+                                else "Без категории"
+                            ),
+                            "quantity": item["quantity"],
+                            "price": f"${float(product.price)}",
+                            "price_value": float(
+                                product.price
+                            ),  # Числовое значение для расчетов
+                            "warranty": product.warranty,
+                            "available_quantity": product.quantity,  # Доступное количество на складе
+                        }
+                    )
+
+            return result
+        except Exception as e:
+            print(f"Ошибка при получении товаров корзины: {e}")
+            return []
+        finally:
+            session.close()
+
+    def add_product_to_cart(self, client_id, product_id, quantity=1):
+        """
+        Добавляет товар в корзину, проверяя его наличие.
+        """
+        if not self.Session:
+            return False, "Ошибка подключения к базе данных"
+
+        session = self.Session()
+        try:
+            # Проверяем наличие товара в нужном количестве
+            product = session.query(Product).get(product_id)
+
+            if not product:
+                return False, "Товар не найден"
+
+            if product.quantity < quantity:
+                return (
+                    False,
+                    f"На складе недостаточно товара (в наличии {product.quantity})",
+                )
+
+            # Добавляем товар в корзину
+            cart_manager.add_to_cart(client_id, product_id, quantity)
+
+            return True, "Товар добавлен в корзину"
+        except Exception as e:
+            print(f"Ошибка при добавлении товара в корзину: {e}")
+            return False, f"Ошибка: {e}"
         finally:
             session.close()
 
