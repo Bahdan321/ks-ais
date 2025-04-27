@@ -1,12 +1,11 @@
 import datetime
 import os
-import psycopg2
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import joinedload
 from dotenv import load_dotenv
 import bcrypt
-from cart import CartManager, cart_manager
+from cart import cart_manager
 from models.models import (
     Category,
     Client,
